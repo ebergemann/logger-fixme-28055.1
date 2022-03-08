@@ -1,39 +1,32 @@
-// @ts-nocheck
-export const SENSITIVE_KEYWORDS = ['apikey', 'password', 'username', 'login'];
+export const SENSITIVE_KEYWORDS: string[] = ['apikey', 'password', 'username', 'login'];
 
-export const scrubString = (message) => {
-  if (typeof message != 'string') {
-    throw new Error('Invalid message');
-  }
-  // TODO: Given a string message, determine if there are any sensitive keywords and replace with '<REDACTED>'
-};
-
-export const scrubMessage = (logMessage) => {
-  if (typeof logMessage != 'string' && typeof logMessage != 'object') {
-    return logMessage;
-  }
-  if (logMessage == null) {
-    return logMessage;
+export function scrubString(message: string): string {
+  if (findKeywords(message)) {
+    return '<REDACTED>';
   }
 
-  if (typeof logMessage == 'string') {
-    return scrubString(logMessage);
-  }
+  return message;
+}
 
-  let cleanMessage = {};
-  const messageKeys = Object.keys(logMessage);
-  for(var i = 0; i < messageKeys.length; i++) {
-    const messageKey = messageKeys[i];
-    const value = logMessage[messageKeys[i]];
+export function scrubMessage(logMessage: Record<string, string>): Record<string, string> {
+  let cleanMessage: Record<string, string> = {};
+  Object.keys(logMessage).forEach((messageKey) => {
+    const value = logMessage[messageKey];
 
-    if(SENSITIVE_KEYWORDS.find((keyword) => { return messageKey.toLowerCase().indexOf(keyword.toLowerCase()) >= 0; })) {
+    if (findKeywords(messageKey)) {
       cleanMessage[messageKey] = '<REDACTED>';
-    } else if(SENSITIVE_KEYWORDS.find((keyword) => { return value.toLowerCase().indexOf(keyword.toLowerCase()) >= 0; })) {
+    } else if (findKeywords(value)) {
       cleanMessage[messageKey] = '<REDACTED>';
     } else {
       cleanMessage[messageKey] = value
     }
-  }
+  });
 
   return cleanMessage;
-};
+}
+
+function findKeywords(message: string): boolean {
+  return SENSITIVE_KEYWORDS.find((keyword) => {
+    return message.toLowerCase().includes(keyword.toLowerCase())
+  }) !== undefined;
+}
